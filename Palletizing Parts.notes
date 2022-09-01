@@ -1,0 +1,34 @@
+---=== Palletizing Parts ===---
+
+We want to assign pallets to the parts before they are cut. This is to make it easier for the fabricators.
+
+The group is indicated on the sticker, this is how the operator knows which pallet to put any part on.
+
+The thickness of the material will determine how many 'layers' we can stack on a pallet. There will be a lookup table that will be referenced by the code.
+
+Need to print palletized list for fabricators to be able to find the parts.
+
+
+
+# First meeting notes:
+
+Does this need to happen when we first upload the MPL or when we are printing the barcodes?
+This happens when the job is finished detailing. Or a manual button. Make a plate palletizing report.
+
+Alternitavely to the 'layering' system, could just have a certian square footage [area] for each pallet.
+
+If we change to reusable bins, will have to accout for individual area contstraints. You can't fit big parts in the metal bins.
+
+
+1/2" plate and smaller - 36 sqft
+more than 1/2" - 24 sqft
+
+
+Sorting plates by main structural member (assembly) - assigning the plate to a pallet.
+
+250 parts - at least 20 weldments
+
+Group field in MPL
+
+Combine smallest pallets at the end of the algorithm.
+

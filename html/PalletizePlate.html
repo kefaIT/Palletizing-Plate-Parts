@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+	<!-- Title -->
+	<title>Palletize Plate</title>
+
+	<!-- Metadata -->
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+	<!-- jQuery -->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+
+	<!-- Bootstrap -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
+		integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"
+		integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS"
+		crossorigin="anonymous"></script>
+
+	<!-- CSS -->
+	<style>
+		body {
+			background-color: #F5F5F5;
+		}
+
+		/* Site Wrapper */
+		.site-wrapper {
+			background-color: #F5F5F5;
+			z-index: 0;
+		}
+
+
+		/* Nav Bar */
+		.nav-bar {
+			/* Flex Container */
+			width: 100%;
+			height: auto;
+
+			position: fixed;
+			z-index: 2;
+
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+
+			color: #FFFFFF;
+			background: linear-gradient(0, #2b0b13, 25%, #46121B);
+			box-shadow: 0px 1px 3px 0px #444;
+		}
+
+		.nav-bar-logo {
+			width: 180px;
+			height: auto;
+			margin: 10px;
+		}
+
+		.nav-bar-title {
+			font-size: x-large;
+			font-weight: bold;
+			white-space: nowrap;
+			margin: 10px;
+		}
+
+		.back-button {
+			width: 200px;
+			height: auto;
+
+			padding: 10px;
+
+			font-size: large;
+			background: none;
+			color: #FFFFFF;
+
+			border: none;
+			border-radius: 5px;
+		}
+
+		/* Body Contents */
+		.body-contents {
+			width: 100%;
+			height: auto;
+
+			display: flex;
+			flex-direction: row;
+			justify-content: center;
+			align-items: center;
+
+			padding-top: 50px;
+		}
+
+		/* All Panels */
+		.panel-default>.panel-heading,
+		.navbar-default {
+			display: flex;
+			flex-direction: row;
+
+			justify-content: flex-start;
+			align-items: center;
+
+			background-image: linear-gradient(0, #2b0b13, 25%, #46121B);
+			color: #FFFFFF;
+			font-size: larger;
+
+		}
+
+		.panel-default {
+			min-width: 500px;
+
+			border-color: #2b0b13;
+			margin: 15px;
+		}
+
+		.panel-body {
+			display: flex;
+
+			flex-direction: column;
+		}
+
+		/* Forms */
+		.form-section {
+			display: flex;
+			flex-direction: row;
+			justify-content: flex-start;
+			align-items: flex-start;
+			margin-bottom: 1em;
+		}
+
+		/* Forms */
+		.form-info-section {
+			display: flex;
+			flex-direction: column;
+			justify-content: flex-start;
+			align-items: flex-start;
+			margin-bottom: 1em;
+		}
+
+		.form-item {
+			padding: .1em .5em .1em .5em;
+		}
+
+		/* Form Panel */
+		.input-box {
+			height: 34px;
+			font-size: larger;
+			color: #555;
+			background-color: #F5F5F5;
+			border: 1px solid #ccc;
+			border-radius: 4px;
+		}
+
+		.info-section {
+			display: flex;
+			flex-direction: row;
+			margin-bottom: .3em;
+			align-items: baseline;
+		}
+
+		.form-info {
+			font-weight: 500;
+			font-size: large;
+			padding: 0;
+		}
+
+		#form-panel {
+			width: 90vw;
+		}
+
+		#hold-note-input {
+			width: 90%
+		}
+
+		#hold-note-form-item {
+			width: 100%;
+		}
+
+		/* Buttons */
+		.form-button {
+			padding: 15px;
+			font-weight: bold;
+		}
+
+
+		.panel-nav-button {
+			margin-right: 8px;
+			font-weight: bold;
+		}
+	</style>
+</head>
+
+<body>
+	<!-- HTML -->
+	<div class="site-wrapper">
+		<!-- Nav Bar -->
+		<nav class="nav-bar">
+			<img class="nav-bar-logo" src="https://kennedyfab.com/wp-content/uploads/2016/06/image002.png">
+			<!-- Kennedy Fab Logo -->
+			<h1 class="nav-bar-title" id="nav-bar-title">Palletizing Parts...</h1>
+			<button class="back-button" onclick="javascript: window.history.back(-1);"> Back</button>
+		</nav>
+
+		<!-- Body Contents -->
+		<div class="body-contents">
+			<!-- Main Panel -->
+			<div class="panel panel-default" id="form-panel">
+				<!-- Panel Heading -->
+				<div class="panel-heading" id="panel-heading">
+					TEST
+				</div>
+				<!-- Panel Body -->
+				<div class="panel-body">
+					<!-- Info section: -->
+					<div class="form-info-section">
+						<div class="info-section">
+							Job Number: <div class="form-item form-info" id="job-number"></div>
+						</div>
+						<div class="info-section">
+							Number of Plasma Parts: <div class="form-item form-info" id="plasma-qty"></div>
+						</div>
+						<div class="info-section">
+							Number of PP Parts: <div class="form-item form-info" id="pp-qty"></div>
+						</div>
+					</div>
+					<!-- Form 2: Win Screen -->
+					<form action="javascript: window.history.back(-1);" id="form-2" hidden>
+						<div class="form-section">
+							<div class="form-item form-info">Successfully Palletized Parts!</div>
+						</div>
+						<button type="submit" class="form-button btn btn-primary">Back</button>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- JavaScript -->
+	<script>
+		// Global Variables/Constants:
+		var jobNumber = "";
+
+		const maxPalletWeight = 300; // Maximum weight that can be assigned to any pallet
+
+		startPalletizationProcess(); // Start of code
+
+		function startPalletizationProcess() {
+			// Set URL Parameter Variables
+			urlParams = new URLSearchParams(window.location.search);
+			RID = urlParams.get('rid');
+			jobNumber = urlParams.get('job');
+			palletizeMode = urlParams.get('pm');
+
+			document.title = ('Palletize ' + palletizeMode + ' Plate');
+		
+			if (palletizeMode == "pl" || palletizeMode == "all") { // For Plasma Parts
+				url = "https://kennedyfab.quickbase.com/db/bi9z9eiy4?act=API_GenResultsTable&query={'27'.EX.'" + jobNumber + "'}AND({'78'.'EX'.'Plasma'})&clist=3.78.28.51.538&jsa=1";
+				getTransactionsInfo(url); // Get info to populate global variables
+			}
+			if (palletizeMode == "pp" || palletizeMode == "all") { // For PP Parts
+				url = "https://kennedyfab.quickbase.com/db/bi9z9eiy4?act=API_GenResultsTable&query={'27'.EX.'" + jobNumber + "'}AND({'78'.'EX'.'PP'})&clist=3.78.28.51.538&jsa=1"; // [0]RID, [1]Process 1, [2]Assembly 
+				getTransactionsInfo(url); // Get info to populate global variables
+			}
+			else { // Wrong or Missing Palletizing Mode
+				alert("Missing or Invalid URL Parameter 'pm': " + palletizeMode);
+				window.history.back(-1);
+			}
+			
+		}
+		function getTransactionsInfo(url) {
+			// Gets the transactions from the given url and creates a parts array with them
+			$.get(url, function () {
+				if (qdb_data.length > 0) { // Found Transactions
+					createPartsArray(qdb_data); // Create an array of part objects based on the gathered part info
+				}
+				else { // Didn't find transactions
+					alert("Couldn't find any parts for job " + jobNumber);
+					window.history.back(-1);
+					return;
+				}
+			});
+		}
+
+
+		function createPartsArray(tInfo) {
+			// This function creates the parts array and then calls the palletizeParts function
+			let partsArray = [];
+			for (let i = 0; i < tInfo.length; i++) { // For every transaction
+				if (tInfo[i][1] == "Plasma") { // If the current transaction is an assembly
+					console.log("Plasma item.");
+				}
+				else if (tInfo[i][1] == "PP") { // If the part is a PP 
+					console.log("PP item.");
+				}
+				else { // If the current transaction is a part
+					partsArray.push(new Part(tInfo[i])); // Append the part to the parts array
+				}
+			}
+			// palletizeParts(partsArray); // Call palletizeParts function with parts array
+		}
+
+
+		function palletizeParts(partsArray) {
+			// This function assigns parts to pallets in the pallet array and then calls the combineSmallPallets function
+			let palletsArray = [new Pallet(partsArray[0])]; // Create the first pallet using the first part and add it to the array
+			for (let i = 1; i < partsArray.length; i++) { // For every part
+				for (let j = 0; j <= palletsArray.length; j++) { // For every pallet
+					if (j == palletsArray.length) { // If there are no more pallets to check
+						palletsArray.push(new Pallet(partsArray[i])); // Create a new pallet for this assembly
+						break;
+					}
+					else if (palletsArray[j].assembly == partsArray[i].assembly) { // if the current pallet is the same assembly as the part
+						if (palletsArray[j].addPart(partsArray[i])) { // Try to put the part on the pallet
+							break; // Break for loop if the part fits, otherwise, try to add it to the next pallet
+						}
+					}
+				}
+			}
+			combineSmallestPallets(palletsArray); // Call combineSmalletsPallets function with the pallets array
+		}
+
+
+		function combineSmallestPallets(palletsArray) {
+			// This function combines all of the smallest pallets with the larger ones
+			palletsArray.sort(function (a, b) { return b.weight - a.weight }); // Sort the pallets array from greatest to least weight
+
+			let i = palletsArray.length - 1; // Index of the lightest pallet
+			let j = 0; // Index of the heaviest pallet
+
+			while (true) { // Loop
+				if (i == j) { // If both pointers are pointing to the same pallet
+					break;
+				}
+				if (palletsArray[j].mergePallet(palletsArray[i])) { // Try to merge the pallets
+					palletsArray.pop(); // On success, pop the small pallet
+					i--; // Decrement the small pallet pointer
+				}
+				else { // If failed to merge pallets
+					j++; // Increment large pallet pointer
+				}
+			}
+
+			setAssignedPalletNumbers(palletsArray); // Call setAssignedPalletNumbers function with pallets array
+		}
+
+
+		function setAssignedPalletNumbers(palletsArray) {
+			// This function makes the API calls to set the assigned pallet numbers
+			console.log(palletsArray);
+
+			for (let i = 0; i < palletsArray.length; i++) {
+				for (let j = 0; j < palletsArray[i].parts.length; j++) {
+					console.log("Assigning Pallet " + i + " to transaction " + palletsArray[i].parts[j].rid);
+				}
+			}
+		}
+
+
+		// Classes:
+		class Part {
+			constructor(transactionInfo) {
+				this.rid = transactionInfo[0];
+				this.weight = Number(transactionInfo[4]);
+				this.assembly = transactionInfo[2];
+				this.material = transactionInfo[3];
+			}
+		}
+
+		class Pallet {
+			constructor(part) {
+				this.assembly = part.assembly;
+				this.weight = part.weight;
+				this.parts = [part];
+			}
+
+			// Methods:
+			addPart(part) {
+				if (this.weight + part.weight > maxPalletWeight) { // If the part won't fit
+					return false;
+				}
+				else {
+					this.weight += part.weight;
+					this.parts.push(part);
+					return true;
+				}
+			}
+
+			mergePallet(pallet) {
+				if (this.weight + pallet.weight > maxPalletWeight) { // If the pallet is to heavy to merge
+					return false;
+				}
+				else {
+					for (let i = 0; i < pallet.parts.length; i++) {
+						this.addPart(pallet.parts[i]);
+					}
+					return true;
+				}
+			}
+		}
+
+	</script>
+</body>
+
+</html>
