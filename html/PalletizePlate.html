@@ -246,58 +246,74 @@
 		startPalletizationProcess(); // Start of code
 
 		function startPalletizationProcess() {
-			// Set URL Parameter Variables
+			// Begin palletization process
+			// Set URL Parameter Variables:
 			urlParams = new URLSearchParams(window.location.search);
 			RID = urlParams.get('rid');
 			jobNumber = urlParams.get('job');
 			palletizeMode = urlParams.get('pm');
 
+			// Set document title:
 			document.title = ('Palletize ' + palletizeMode + ' Plate');
-		
+
+			let apiUrlsArray = [];
+
 			if (palletizeMode == "pl" || palletizeMode == "all") { // For Plasma Parts
-				url = "https://kennedyfab.quickbase.com/db/bi9z9eiy4?act=API_GenResultsTable&query={'27'.EX.'" + jobNumber + "'}AND({'78'.'EX'.'Plasma'})&clist=3.78.28.51.538&jsa=1";
-				getTransactionsInfo(url); // Get info to populate global variables
+				apiUrlsArray.push("https://kennedyfab.quickbase.com/db/bi9z9eiy4?act=API_GenResultsTable&query={'27'.EX.'" + jobNumber + "'}AND({'78'.'EX'.'Plasma'})&clist=3.78.28.51.538&options=num-10000&jsa=1");
+
 			}
 			if (palletizeMode == "pp" || palletizeMode == "all") { // For PP Parts
-				url = "https://kennedyfab.quickbase.com/db/bi9z9eiy4?act=API_GenResultsTable&query={'27'.EX.'" + jobNumber + "'}AND({'78'.'EX'.'PP'})&clist=3.78.28.51.538&jsa=1"; // [0]RID, [1]Process 1, [2]Assembly 
-				getTransactionsInfo(url); // Get info to populate global variables
+				apiUrlsArray.push("https://kennedyfab.quickbase.com/db/bi9z9eiy4?act=API_GenResultsTable&query={'27'.EX.'" + jobNumber + "'}AND({'78'.'EX'.'PP'})&clist=3.78.28.51.538&options=num-10000&jsa=1"); // [0]RID, [1]Process 1, [2]Assembly 
 			}
-			else { // Wrong or Missing Palletizing Mode
+			if (palletizeMode != "pl" && palletizeMode != "pp" && palletizeMode != "all") { // Wrong or Missing Palletizing Mode
 				alert("Missing or Invalid URL Parameter 'pm': " + palletizeMode);
 				window.history.back(-1);
 			}
-			
+
+			getTransactionsInfo(apiUrlsArray); // Get info to populate global variables
+
 		}
-		function getTransactionsInfo(url) {
+
+
+		function getTransactionsInfo(urlsArray) {
 			// Gets the transactions from the given url and creates a parts array with them
-			$.get(url, function () {
-				if (qdb_data.length > 0) { // Found Transactions
-					createPartsArray(qdb_data); // Create an array of part objects based on the gathered part info
-				}
-				else { // Didn't find transactions
-					alert("Couldn't find any parts for job " + jobNumber);
-					window.history.back(-1);
-					return;
-				}
-			});
+
+			let promiseArray = [];
+			for (let i = 0; i < urlsArray.length; i++) { // for every url
+				promiseArray.push(new Promise((resolve, reject) => {
+					$.get(urlsArray[i], function () {
+						if (qdb_data.length > 0) { // Found Transactions
+							resolve(qdb_data); // Call resolve function with transactions array
+						}
+						else { // Didn't find transactions
+							reject("Couldn't find any parts for job " + jobNumber); // Call reject function with error message
+						}
+					});
+				}));
+			}
+
+			Promise.all(promiseArray)
+				.then((transactionsArray) => {
+					createPartsArray(transactionsArray); // Create an array of part objects based on the gathered part info
+				})
+				.catch((message) => {
+					alert(message); // Display error message
+					window.history.back(-1); // Go back to previous page
+				});
+
 		}
 
 
-		function createPartsArray(tInfo) {
+		function createPartsArray(transactionsArray) {
 			// This function creates the parts array and then calls the palletizeParts function
 			let partsArray = [];
-			for (let i = 0; i < tInfo.length; i++) { // For every transaction
-				if (tInfo[i][1] == "Plasma") { // If the current transaction is an assembly
-					console.log("Plasma item.");
+			for (let i = 0; i < transactionsArray.length; i++) { // For each machine
+				partsArray = []; // Clear the parts array
+				for (let j = 0; j < transactionsArray[i].length; j++) {
+					partsArray.push(new Part(transactionsArray[i][j])); // Create part object and append it to the parts array
 				}
-				else if (tInfo[i][1] == "PP") { // If the part is a PP 
-					console.log("PP item.");
-				}
-				else { // If the current transaction is a part
-					partsArray.push(new Part(tInfo[i])); // Append the part to the parts array
-				}
+				palletizeParts(partsArray); // Call palletizeParts function with parts array
 			}
-			// palletizeParts(partsArray); // Call palletizeParts function with parts array
 		}
 
 
@@ -351,7 +367,7 @@
 
 			for (let i = 0; i < palletsArray.length; i++) {
 				for (let j = 0; j < palletsArray[i].parts.length; j++) {
-					console.log("Assigning Pallet " + i + " to transaction " + palletsArray[i].parts[j].rid);
+					// console.log("Assigning Pallet " + i + " to transaction " + palletsArray[i].parts[j].rid);
 				}
 			}
 		}
