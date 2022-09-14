@@ -162,7 +162,11 @@
 		.form-info {
 			font-weight: 500;
 			font-size: large;
-			padding: 0;
+		}
+
+		.form-info-label {
+			font-weight: 500;
+			font-size: large;
 		}
 
 		#form-panel {
@@ -208,20 +212,15 @@
 			<div class="panel panel-default" id="form-panel">
 				<!-- Panel Heading -->
 				<div class="panel-heading" id="panel-heading">
-					TEST
+					Job Info
 				</div>
 				<!-- Panel Body -->
 				<div class="panel-body">
 					<!-- Info section: -->
 					<div class="form-info-section">
 						<div class="info-section">
-							Job Number: <div class="form-item form-info" id="job-number"></div>
-						</div>
-						<div class="info-section">
-							Number of Plasma Parts: <div class="form-item form-info" id="plasma-qty"></div>
-						</div>
-						<div class="info-section">
-							Number of PP Parts: <div class="form-item form-info" id="pp-qty"></div>
+							<label for="job-number" class="form-info-label">Job Number: </label>
+							<div class="form-item form-info" id="job-number"></div>
 						</div>
 					</div>
 					<!-- Form 2: Win Screen -->
@@ -253,8 +252,8 @@
 			jobNumber = urlParams.get('job');
 			palletizeMode = urlParams.get('pm');
 
-			// Set document title:
-			document.title = ('Palletize ' + palletizeMode + ' Plate');
+			displayJobInfo();
+			updatePageTitle();
 
 			let apiUrlsArray = [];
 
@@ -269,15 +268,36 @@
 				alert("Missing or Invalid URL Parameter 'pm': " + palletizeMode);
 				window.history.back(-1);
 			}
-
 			getTransactionsInfo(apiUrlsArray); // Get info to populate global variables
+		}
 
+
+		function displayJobInfo() {
+			// Displays relevant information about the job to the screen
+			$("#job-number").text(jobNumber);
+		}
+
+
+		function updatePageTitle() {
+			// Dynamically sets the page title based on palletize mode
+			let pageTitle = "";
+			switch (palletizeMode) {
+				case "pl":
+					pageTitle = "Palletize Plasma Parts";
+					break;
+				case "pp":
+					pageTitle = "Palletize Part Processor Parts";
+					break;
+				case "all":
+					pageTitle = "Palletize All Plate Parts";
+					break;
+			}
+			document.title = pageTitle; // Set the page title
 		}
 
 
 		function getTransactionsInfo(urlsArray) {
 			// Gets the transactions from the given url and creates a parts array with them
-
 			let promiseArray = [];
 			for (let i = 0; i < urlsArray.length; i++) { // for every url
 				promiseArray.push(new Promise((resolve, reject) => {
@@ -356,7 +376,6 @@
 					j++; // Increment large pallet pointer
 				}
 			}
-
 			setAssignedPalletNumbers(palletsArray); // Call setAssignedPalletNumbers function with pallets array
 		}
 
