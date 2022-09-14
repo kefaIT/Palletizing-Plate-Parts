@@ -25,6 +25,7 @@
 	<style>
 		body {
 			background-color: #F5F5F5;
+			max-height: 100vh;
 		}
 
 		/* Nav Bar */
@@ -72,13 +73,24 @@
 		/* Body Contents */
 		.body-contents {
 			width: 100%;
-			height: auto;
+			max-height: 100vh;
 
 			display: flex;
 			flex-direction: row;
 			justify-content: flex-start;
 
 			padding-top: 3.5em;
+		}
+
+		/* Columns */
+		#right-column {
+			width: 75vw;
+			max-height: 100vh;
+			overflow-y: scroll;
+		}
+
+		#left-column {
+			width: 25vw;
 		}
 
 		/* All Panels */
@@ -97,13 +109,17 @@
 		}
 
 		.panel-default {
-			border-color: #2b0b13;
-			margin: 0em .5em; /* top & bottom, left & right*/
+			margin: 0em .5em;
+			/* top & bottom, left & right*/
 		}
 
 		.panel-body {
 			display: flex;
 			flex-direction: column;
+		}
+
+		#palletized-table-panel-body {
+			padding: 0;
 		}
 
 		.info-section {
@@ -121,8 +137,23 @@
 			font-size: larger;
 		}
 
-		#job-info-panel {
-			width: 25vw;
+		#palletized-table-panel {
+			margin-bottom: 10em;
+		}
+
+		/* Palletized Table */
+		.pallet-header-row {
+			font-size: larger;
+			font-weight: bolder !important;
+			background: #fafafa !important;
+		}
+
+		.part-row {
+			padding-left: 1em !important;
+		}
+
+		.pallet-header-row:hover {
+			background: #e6e6e6 !important;
 		}
 	</style>
 </head>
@@ -134,23 +165,44 @@
 		<img class="nav-bar-logo" src="https://kennedyfab.com/wp-content/uploads/2016/06/image002.png">
 		<!-- Kennedy Fab Logo -->
 		<h1 class="nav-bar-title">Palletize Parts</h1>
-		<button class="back-button" onclick="javascript: window.history.back(-1);"> Back</button>
+		<div class="back-button"></div>
 	</nav>
 
 	<!-- Body Contents -->
 	<div class="body-contents">
-		<!-- Job Info Panel -->
-		<div class="panel panel-default" id="job-info-panel">
-			<!-- Panel Heading -->
-			<div class="panel-heading">
-				Job Info
-			</div>
+		<div id="left-column">
 			<!-- Job Info Panel -->
-			<div class="panel-body">
-				<!-- Info section: -->
-				<div class="info-section">
-					<label for="job-number" class="info-label">Job Number: </label>
-					<div id="job-number" class="info-item"></div>
+			<div class="panel panel-default" id="job-info-panel">
+				<!-- Panel Heading -->
+				<div class="panel-heading">
+					Job Info
+				</div>
+				<!-- Job Info Panel Body-->
+				<div class="panel-body">
+					<!-- Info section: -->
+					<div class="info-section">
+						<label for="job-number" class="info-label">Job Number: </label>
+						<div id="job-number" class="info-item"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="right-column">
+			<!-- Palletized Table Panel -->
+			<div class="panel panel-default" id="palletized-table-panel">
+				<div class="panel-body" id="palletized-table-panel-body">
+					<!-- Palletized Table -->
+					<table class="table table-striped table-condensed">
+						<!-- <thead>
+							<tr>
+								<th>Pallet Number</th>
+								<th>Assembly #</th>
+								<th>Quantity</th>
+								<th>Weight [lbs]</th>
+							</tr>
+						</thead> -->
+						<tbody id="palletized-table-body"></tbody>
+					</table>
 				</div>
 			</div>
 		</div>
@@ -297,21 +349,41 @@
 					j++; // Increment large pallet pointer
 				}
 			}
-			setAssignedPalletNumbers(palletsArray); // Call setAssignedPalletNumbers function with pallets array
+			displayPalletizedTable(palletsArray); // Call displayPalletizedTable function with pallets array
 		}
 
 
-		function setAssignedPalletNumbers(palletsArray) {
-			// This function makes the API calls to set the assigned pallet numbers
-			console.log(palletsArray);
+		function displayPalletizedTable(palletsArray) {
+			// Populates table with paelltized parts info
+			let tableContents = "";
 
 			for (let i = 0; i < palletsArray.length; i++) {
+				tableContents += `
+					<tr class="pallet-header-row" onclick="toggleHideParts('p${i}')">
+						<td>Pallet ${i + 1}</td>
+						<td>Assembly: ${palletsArray[i].assembly}</td>
+						<td>${palletsArray[i].parts.length} pcs</td>
+						<td>${palletsArray[i].weight.toFixed(2)} lbs</td>
+					</tr>
+				`
 				for (let j = 0; j < palletsArray[i].parts.length; j++) {
-					// console.log("Assigning Pallet " + i + " to transaction " + palletsArray[i].parts[j].rid);
+					tableContents += `
+						<tr class="part-row" name="p${i}" hidden>
+							<td>RID: ${palletsArray[i].parts[j].rid}</td>
+							<td>Assembly: ${palletsArray[i].parts[j].assembly}</td>
+							<td>Material: ${palletsArray[i].parts[j].material}</td>
+							<td>${palletsArray[i].parts[j].weight.toFixed(2)} lbs</td>
+						</tr>
+					`
 				}
 			}
+			$("#palletized-table-body").append(tableContents)
 		}
 
+		function toggleHideParts(palletIndex) {
+			// Hides and unhides parts rows when pallet header is clicked
+			$("[name='" + palletIndex + "']").toggle();
+		}
 
 		// Classes:
 		class Part {
