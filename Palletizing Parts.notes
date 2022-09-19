@@ -10,7 +10,7 @@ Need to print palletized list for fabricators to be able to find the parts.
 
 
 
-# First meeting notes:
+# First Meeting Notes:
 
 Does this need to happen when we first upload the MPL or when we are printing the barcodes?
 This happens when the job is finished detailing. Or a manual button. Make a plate palletizing report.
@@ -32,3 +32,30 @@ Group field in MPL
 
 Combine smallest pallets at the end of the algorithm.
 
+
+# Second Meeting Notes:
+
+
+What weight limit should we use for each pallet?
+
+Who exactly should be the one to run the script?
+	I think the detailer should decide if the job is big enough to palletize.
+
+What information is needed on the output spreadsheet?
+
+Should the spreadsheet be something that is generated through a quickbase report and JZ or someone like that can just download it as a csv and print?
+
+
+Format as [JOB#-PALLET#]
+
+
+
+Quickbase report that groups by pallet and shows each part colored based on if the nest is cut.
+
+Parts are yellow when secondary process is not complete and only turn green once the punch pallet is recieved back at the plasma table.
+
+Don't ask for bin on jobs that have been automatically palletized.
+
+Fitup weldout report
+
+Group the handrails by assembly *******

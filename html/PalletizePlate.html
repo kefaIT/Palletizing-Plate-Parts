@@ -86,7 +86,7 @@
 		#right-column {
 			width: 75vw;
 			max-height: 100vh;
-			overflow-y: scroll;
+			overflow-y: hidden;
 		}
 
 		#left-column {
@@ -94,6 +94,11 @@
 		}
 
 		/* All Panels */
+		.panel-default {
+			border: none;
+		}
+
+		
 		.panel-default>.panel-heading {
 			display: flex;
 			flex-direction: row;
@@ -108,6 +113,23 @@
 			padding: .5em;
 		}
 
+		.panel-default>.panel-navbar {
+			display: flex;
+			flex-direction: row;
+
+			justify-content: flex-start;
+			align-items: center;
+
+			background: #F5F5F5;
+			color: #FFFFFF;
+			font-size: medium;
+
+			height: 2em;
+
+			padding: .0;
+		}
+
+
 		.panel-default {
 			margin: 0em .5em;
 			/* top & bottom, left & right*/
@@ -120,6 +142,9 @@
 
 		#palletized-table-panel-body {
 			padding: 0;
+			max-height: 100vh;
+			margin-bottom: 10em;
+			overflow-y: scroll;
 		}
 
 		.info-section {
@@ -137,15 +162,34 @@
 			font-size: larger;
 		}
 
-		#palletized-table-panel {
+		#palletized-table-body {
 			margin-bottom: 10em;
 		}
 
 		/* Palletized Table */
+		.tab {
+			width: 8.5em;
+			border-radius: .75em .75em 0 0;
+			background: #404040;
+			height: 2em;
+			text-align: center;
+			padding: .5em;
+			margin-right: .2em;
+			cursor: pointer;
+		}
+
+		.tab.selected {
+			background: hotpink;
+		}
+
+		.tab:hover {
+			background: rgb(121, 121, 121);
+		}
+
 		.pallet-header-row {
 			font-size: larger;
 			font-weight: bolder !important;
-			background: #fafafa !important;
+			background: #FFFFFF !important;
 		}
 
 		.part-row {
@@ -153,7 +197,17 @@
 		}
 
 		.pallet-header-row:hover {
-			background: #e6e6e6 !important;
+			background: #F5F5F5 !important;
+		}
+
+		.machine-header-row {
+			font-size: larger !important;
+			background: #404040 !important;
+			color: #FFFFFF;
+		}
+
+		td {
+			cursor: default;
 		}
 	</style>
 </head>
@@ -184,23 +238,34 @@
 						<label for="job-number" class="info-label">Job Number: </label>
 						<div id="job-number" class="info-item"></div>
 					</div>
+					<div class="info-section">
+						<label for="job-number" class="info-label">Number of Plasma Parts: </label>
+						<div id="job-number" class="info-item"></div>
+					</div>
+					<div class="info-section">
+						<label for="job-number" class="info-label">Number of PP Parts: </label>
+						<div id="job-number" class="info-item"></div>
+					</div>
+					<div class="info-section">
+						<label for="job-number" class="info-label">Number of Plasma Pallets: </label>
+						<div id="job-number" class="info-item"></div>
+					</div>
+					<div class="info-section">
+						<label for="job-number" class="info-label">Number of PP Pallets: </label>
+						<div id="job-number" class="info-item"></div>
+					</div>
 				</div>
 			</div>
 		</div>
 		<div id="right-column">
 			<!-- Palletized Table Panel -->
 			<div class="panel panel-default" id="palletized-table-panel">
+				<!-- Panel Heading -->
+				<div class="panel-navbar" id="tabs">
+				</div>
 				<div class="panel-body" id="palletized-table-panel-body">
 					<!-- Palletized Table -->
-					<table class="table table-striped table-condensed">
-						<!-- <thead>
-							<tr>
-								<th>Pallet Number</th>
-								<th>Assembly #</th>
-								<th>Quantity</th>
-								<th>Weight [lbs]</th>
-							</tr>
-						</thead> -->
+					<table id="palletized-table" class="table table-striped table-condensed">
 						<tbody id="palletized-table-body"></tbody>
 					</table>
 				</div>
@@ -212,27 +277,28 @@
 	<script>
 		// Global Variables/Constants:
 		var jobNumber = "";
+		var RID = "";
+		var palletizeMode = "";
 
-		const maxPalletWeight = 300; // Maximum weight that can be assigned to any pallet
+		const maxPalletWeight = 750; // Maximum weight that can be assigned to any pallet [lbs]
 
 		startPalletizationProcess(); // Start of code
 
 		function startPalletizationProcess() {
 			// Begin palletization process
 			// Set URL Parameter Variables:
-			urlParams = new URLSearchParams(window.location.search);
+			let urlParams = new URLSearchParams(window.location.search);
 			RID = urlParams.get('rid');
 			jobNumber = urlParams.get('job');
 			palletizeMode = urlParams.get('pm');
 
 			displayJobInfo();
-			updatePageTitle();
+			updatePalletizeMode();
 
 			let apiUrlsArray = [];
 
 			if (palletizeMode == "pl" || palletizeMode == "all") { // For Plasma Parts
 				apiUrlsArray.push("https://kennedyfab.quickbase.com/db/bi9z9eiy4?act=API_GenResultsTable&query={'27'.EX.'" + jobNumber + "'}AND({'78'.'EX'.'Plasma'})&clist=3.78.28.51.538&options=num-10000&jsa=1");
-
 			}
 			if (palletizeMode == "pp" || palletizeMode == "all") { // For PP Parts
 				apiUrlsArray.push("https://kennedyfab.quickbase.com/db/bi9z9eiy4?act=API_GenResultsTable&query={'27'.EX.'" + jobNumber + "'}AND({'78'.'EX'.'PP'})&clist=3.78.28.51.538&options=num-10000&jsa=1"); // [0]RID, [1]Process 1, [2]Assembly 
@@ -241,6 +307,7 @@
 				alert("Missing or Invalid URL Parameter 'pm': " + palletizeMode);
 				window.history.back(-1);
 			}
+
 			getTransactionsInfo(apiUrlsArray); // Get info to populate global variables
 		}
 
@@ -251,21 +318,33 @@
 		}
 
 
-		function updatePageTitle() {
+		function updatePalletizeMode() {
 			// Dynamically sets the page title based on palletize mode
 			let pageTitle = "";
+			let tabs = "";
 			switch (palletizeMode) {
 				case "pl":
 					pageTitle = "Palletize Plasma Parts";
+					tabs = `
+						<div class="tab">Plasma</div>
+					`;
 					break;
 				case "pp":
 					pageTitle = "Palletize Part Processor Parts";
+					tabs = `
+						<div class="tab">PP</div>
+					`;
 					break;
 				case "all":
 					pageTitle = "Palletize All Plate Parts";
+					tabs = `
+						<div class="tab selected" id="plasma-tab" onclick="$('.Plasma-row.pallet-header-row, .Plasma-row.machine-header-row').show(); $('.PP-row').hide(); $('#plasma-tab').addClass('selected'); $('#pp-tab').removeClass('selected');">Plasma</div>
+						<div class="tab" id="pp-tab" onclick="$('.PP-row.pallet-header-row, .PP-row.machine-header-row').show(); $('.Plasma-row').hide(); $('#pp-tab').addClass('selected'); $('#plasma-tab').removeClass('selected');">PP</div>
+					`;
 					break;
 			}
 			document.title = pageTitle; // Set the page title
+			$("#tabs").append(tabs);
 		}
 
 
@@ -308,6 +387,7 @@
 				palletizeParts(partsArray); // Call palletizeParts function with parts array
 			}
 		}
+
 
 
 		function palletizeParts(partsArray) {
@@ -353,31 +433,33 @@
 		}
 
 
-		function displayPalletizedTable(palletsArray) {
+		function displayPalletizedTable(palletsArray) {  // COMMENT THIS VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 			// Populates table with paelltized parts info
-			let tableContents = "";
+			machine = palletsArray[0].machine
+			let tableContents = ``;
 
 			for (let i = 0; i < palletsArray.length; i++) {
 				tableContents += `
-					<tr class="pallet-header-row" onclick="toggleHideParts('p${i}')">
+					<tr class="pallet-header-row ${machine}-row" onclick="toggleHideParts('p${i}-${machine}')">
 						<td>Pallet ${i + 1}</td>
 						<td>Assembly: ${palletsArray[i].assembly}</td>
 						<td>${palletsArray[i].parts.length} pcs</td>
 						<td>${palletsArray[i].weight.toFixed(2)} lbs</td>
 					</tr>
-				`
+				`;
 				for (let j = 0; j < palletsArray[i].parts.length; j++) {
 					tableContents += `
-						<tr class="part-row" name="p${i}" hidden>
+						<tr class="part-row ${machine}-row" name="p${i}-${machine}" hidden>
 							<td>RID: ${palletsArray[i].parts[j].rid}</td>
 							<td>Assembly: ${palletsArray[i].parts[j].assembly}</td>
 							<td>Material: ${palletsArray[i].parts[j].material}</td>
 							<td>${palletsArray[i].parts[j].weight.toFixed(2)} lbs</td>
 						</tr>
-					`
+					`;
 				}
 			}
 			$("#palletized-table-body").append(tableContents)
+			$(".PP-row").hide();
 		}
 
 		function toggleHideParts(palletIndex) {
@@ -392,6 +474,7 @@
 				this.weight = Number(transactionInfo[4]);
 				this.assembly = transactionInfo[2];
 				this.material = transactionInfo[3];
+				this.machine = transactionInfo[1];
 			}
 		}
 
@@ -400,6 +483,7 @@
 				this.assembly = part.assembly;
 				this.weight = part.weight;
 				this.parts = [part];
+				this.machine = part.machine;
 			}
 
 			// Methods:
