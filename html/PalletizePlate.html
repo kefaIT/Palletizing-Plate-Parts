@@ -140,11 +140,23 @@
 			flex-direction: column;
 		}
 
+		#palletized-table-panel {
+			background: #F5F5F5;
+		}
+
 		#palletized-table-panel-body {
 			padding: 0;
 			max-height: 100vh;
-			margin-bottom: 10em;
+			padding-bottom: 20em;
+			margin-right: 2.5vw;
 			overflow-y: scroll;
+			background: #F5F5F5;
+		}
+
+		#palletized-table-panel-heading {
+			background: rgb(51, 122, 183);
+			margin-right: 2.5vw;
+			border-radius: 0 .25em 0 0;
 		}
 
 		.info-section {
@@ -162,9 +174,6 @@
 			font-size: larger;
 		}
 
-		#palletized-table-body {
-			margin-bottom: 10em;
-		}
 
 		/* Palletized Table */
 		.tab {
@@ -179,17 +188,33 @@
 		}
 
 		.tab.selected {
-			background: hotpink;
+			background: rgb(51, 122, 183);
+		}
+
+		.tab.selected:hover {
+			background: rgb(51, 122, 183);
 		}
 
 		.tab:hover {
 			background: rgb(121, 121, 121);
 		}
 
+		.button-section {
+			display: flex;
+			justify-content: center;
+		}
+
+		.assign-pallets-button {
+			width: 23vw;
+			font-size: larger;
+			font-weight: bold;
+		}
+
 		.pallet-header-row {
 			font-size: larger;
 			font-weight: bolder !important;
 			background: #FFFFFF !important;
+			cursor: pointer !important;
 		}
 
 		.part-row {
@@ -206,9 +231,7 @@
 			color: #FFFFFF;
 		}
 
-		td {
-			cursor: default;
-		}
+		
 	</style>
 </head>
 
@@ -239,20 +262,23 @@
 						<div id="job-number" class="info-item"></div>
 					</div>
 					<div class="info-section">
-						<label for="job-number" class="info-label">Number of Plasma Parts: </label>
-						<div id="job-number" class="info-item"></div>
+						<label for="Plasma-parts-qty" class="info-label">Number of Plasma Parts: </label>
+						<div id="Plasma-parts-qty" class="info-item"></div>
 					</div>
 					<div class="info-section">
-						<label for="job-number" class="info-label">Number of PP Parts: </label>
-						<div id="job-number" class="info-item"></div>
+						<label for="PP-parts-qty" class="info-label">Number of PP Parts: </label>
+						<div id="PP-parts-qty" class="info-item"></div>
 					</div>
 					<div class="info-section">
-						<label for="job-number" class="info-label">Number of Plasma Pallets: </label>
-						<div id="job-number" class="info-item"></div>
+						<label for="Plasma-pallets-qty" class="info-label">Number of Plasma Pallets: </label>
+						<div id="Plasma-pallets-qty" class="info-item"></div>
 					</div>
 					<div class="info-section">
-						<label for="job-number" class="info-label">Number of PP Pallets: </label>
-						<div id="job-number" class="info-item"></div>
+						<label for="PP-pallets-qty" class="info-label">Number of PP Pallets: </label>
+						<div id="PP-pallets-qty" class="info-item"></div>
+					</div>
+					<div class="button-section">
+						<button class="btn btn-primary assign-pallets-button" onclick="assignPallets()">Assign Pallets</button>
 					</div>
 				</div>
 			</div>
@@ -263,6 +289,7 @@
 				<!-- Panel Heading -->
 				<div class="panel-navbar" id="tabs">
 				</div>
+				<div class="panel-heading" id="palletized-table-panel-heading"></div>
 				<div class="panel-body" id="palletized-table-panel-body">
 					<!-- Palletized Table -->
 					<table id="palletized-table" class="table table-striped table-condensed">
@@ -279,6 +306,9 @@
 		var jobNumber = "";
 		var RID = "";
 		var palletizeMode = "";
+
+		let palletizedPartsArray = [];
+		let finishedPalletsArray = [];
 
 		const maxPalletWeight = 750; // Maximum weight that can be assigned to any pallet [lbs]
 
@@ -381,9 +411,10 @@
 			let partsArray = [];
 			for (let i = 0; i < transactionsArray.length; i++) { // For each machine
 				partsArray = []; // Clear the parts array
-				for (let j = 0; j < transactionsArray[i].length; j++) {
+				for (let j = 0; j < transactionsArray[i].length; j++) { // For each part
 					partsArray.push(new Part(transactionsArray[i][j])); // Create part object and append it to the parts array
 				}
+				$('#' + partsArray[0].machine + '-parts-qty').text(partsArray.length);
 				palletizeParts(partsArray); // Call palletizeParts function with parts array
 			}
 		}
@@ -429,6 +460,7 @@
 					j++; // Increment large pallet pointer
 				}
 			}
+			$('#' + palletsArray[0].machine + '-pallets-qty').text(palletsArray.length);
 			displayPalletizedTable(palletsArray); // Call displayPalletizedTable function with pallets array
 		}
 
@@ -466,6 +498,12 @@
 			// Hides and unhides parts rows when pallet header is clicked
 			$("[name='" + palletIndex + "']").toggle();
 		}
+
+
+		function assignPallets() {
+			console.log("Assigining Pallets!");
+		}
+
 
 		// Classes:
 		class Part {
