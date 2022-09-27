@@ -24,7 +24,7 @@
 	<!-- CSS -->
 	<style>
 		body {
-			background-color: #F5F5F5;
+			background-color: #e9e9e9;
 			max-height: 100vh;
 		}
 
@@ -98,7 +98,7 @@
 			border: none;
 		}
 
-		
+
 		.panel-default>.panel-heading {
 			display: flex;
 			flex-direction: row;
@@ -111,6 +111,8 @@
 			font-size: medium;
 
 			padding: .5em;
+
+			border-radius: .75em .75em 0 0;
 		}
 
 		.panel-default>.panel-navbar {
@@ -120,7 +122,7 @@
 			justify-content: flex-start;
 			align-items: center;
 
-			background: #F5F5F5;
+			background: #e9e9e9;
 			color: #FFFFFF;
 			font-size: medium;
 
@@ -132,6 +134,7 @@
 
 		.panel-default {
 			margin: 0em .5em;
+			border-radius: .75em;
 			/* top & bottom, left & right*/
 		}
 
@@ -141,22 +144,23 @@
 		}
 
 		#palletized-table-panel {
-			background: #F5F5F5;
+			background: #e9e9e9;
 		}
 
 		#palletized-table-panel-body {
 			padding: 0;
-			max-height: 100vh;
+			max-height: calc(100vh - 6.75em);
 			padding-bottom: 20em;
 			margin-right: 2.5vw;
 			overflow-y: scroll;
-			background: #F5F5F5;
+			background: #e9e9e9;
 		}
 
 		#palletized-table-panel-heading {
 			background: rgb(51, 122, 183);
 			margin-right: 2.5vw;
 			border-radius: 0 .25em 0 0;
+			height: 1em;
 		}
 
 		.info-section {
@@ -179,7 +183,7 @@
 		.tab {
 			width: 8.5em;
 			border-radius: .75em .75em 0 0;
-			background: #404040;
+			background: linear-gradient(#505050, #353535);
 			height: 2em;
 			text-align: center;
 			padding: .5em;
@@ -222,7 +226,7 @@
 		}
 
 		.pallet-header-row:hover {
-			background: #F5F5F5 !important;
+			background: #e9e9e9 !important;
 		}
 
 		.machine-header-row {
@@ -230,8 +234,6 @@
 			background: #404040 !important;
 			color: #FFFFFF;
 		}
-
-		
 	</style>
 </head>
 
@@ -278,7 +280,8 @@
 						<div id="PP-pallets-qty" class="info-item"></div>
 					</div>
 					<div class="button-section">
-						<button class="btn btn-primary assign-pallets-button" onclick="assignPallets()">Assign Pallets</button>
+						<button class="btn btn-primary assign-pallets-button" onclick="assignPallets()">Assign
+							Pallets</button>
 					</div>
 				</div>
 			</div>
@@ -307,8 +310,7 @@
 		var RID = "";
 		var palletizeMode = "";
 
-		let palletizedPartsArray = [];
-		let finishedPalletsArray = [];
+		let finishedPalletsArray = []; // Array of all pallets for each machine
 
 		const maxPalletWeight = 750; // Maximum weight that can be assigned to any pallet [lbs]
 
@@ -356,13 +358,13 @@
 				case "pl":
 					pageTitle = "Palletize Plasma Parts";
 					tabs = `
-						<div class="tab">Plasma</div>
+						<div class="tab selected">Plasma</div>
 					`;
 					break;
 				case "pp":
 					pageTitle = "Palletize Part Processor Parts";
 					tabs = `
-						<div class="tab">PP</div>
+						<div class="tab selected">PP</div>
 					`;
 					break;
 				case "all":
@@ -465,12 +467,15 @@
 		}
 
 
-		function displayPalletizedTable(palletsArray) {  // COMMENT THIS VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+		function displayPalletizedTable(palletsArray) {
 			// Populates table with paelltized parts info
 			machine = palletsArray[0].machine
 			let tableContents = ``;
 
-			for (let i = 0; i < palletsArray.length; i++) {
+			finishedPalletsArray.push(palletsArray); // Add finished pallets array to global variable
+
+			for (let i = 0; i < palletsArray.length; i++) { // For every pallet
+				// Add the pallet header row:
 				tableContents += `
 					<tr class="pallet-header-row ${machine}-row" onclick="toggleHideParts('p${i}-${machine}')">
 						<td>Pallet ${i + 1}</td>
@@ -479,7 +484,8 @@
 						<td>${palletsArray[i].weight.toFixed(2)} lbs</td>
 					</tr>
 				`;
-				for (let j = 0; j < palletsArray[i].parts.length; j++) {
+				for (let j = 0; j < palletsArray[i].parts.length; j++) { // For ever part in the current pallet
+					// Add the part row
 					tableContents += `
 						<tr class="part-row ${machine}-row" name="p${i}-${machine}" hidden>
 							<td>RID: ${palletsArray[i].parts[j].rid}</td>
@@ -490,8 +496,12 @@
 					`;
 				}
 			}
+
+
 			$("#palletized-table-body").append(tableContents)
-			$(".PP-row").hide();
+			if (palletizeMode == "all") {
+				$(".PP-row").hide();
+			}
 		}
 
 		function toggleHideParts(palletIndex) {
@@ -501,9 +511,81 @@
 
 
 		function assignPallets() {
-			console.log("Assigining Pallets!");
+			// Creates a bin for each pallet and assigns the bin to each part
+
+
+			let promiseArray = [];
+			let url = "";
+
+			for (let i = 0; i < finishedPalletsArray.length; i++) { // For each machine
+				for (let j = 0; j < finishedPalletsArray[i].length; j++) { // For each pallet
+					url = "https://kennedyfab.quickbase.com/db/bjbx7jyz4?a=API_AddRecord&_fid_27=Temporary&_fid_40=test";
+
+					promiseArray.push(new Promise((resolve, reject) => {
+						$.ajax({
+							url: url,
+							type: 'POST',
+							contentType: "text/xml",
+							success: function (response) {
+								if ($('errcode', response).text() != "0") { // If Error
+									reject($('errtext', response).text(), $('errdetail', response).text()); // reject with error message
+								}
+								else { // If no error
+									resolve($('rid', response).text());
+								}
+							},
+							error: function (xhr, status, error) { // If it failed
+								console.log(xhr, status, error);
+								alert(errcode, errtext);
+							}
+
+						});
+					}));
+				}
+			}
+			Promise.all(promiseArray)
+				.then((binRidArray) => {
+					assignPalletNames(binRidArray);
+				})
+				.catch((message) => {
+					alert(message); // Display error message
+				});
 		}
 
+
+		function assignPalletNames(binRidArray) {
+			// Makes API calls to set the "Assigned Pallet Number" transactions field to the formatted name (AP1-69420, where AP1 represents assigned pallet 1 and 69420 represents the bin rid)
+			let csvData = `<qdbapi><records_csv><![CDATA[Record ID#,Assigned Pallet Number\n`;
+			for (let i = 0; i < finishedPalletsArray.length; i++) { // For every machine
+				for (let j = 0; j < finishedPalletsArray[i].length; j++) { // For every pallet
+					for (let k = 0; k < finishedPalletsArray[i][j].parts.length; k++) { // For every part
+						// The confusing part of this is because the binRidArray is a 1D array while finishedPalletsArray is multidimensional
+						csvData += finishedPalletsArray[i][j].parts[k].rid + ",AP" + (j + 1) + "-" + binRidArray[i * finishedPalletsArray[0].length + j] + "\n"; // [Record ID#, Assingned Pallet Number]
+					}
+				}
+			}
+			csvData += `]]></records_csv><clist>3.172</clist><skipfirst>1</skipfirst></qdbapi>`;
+
+			$.ajax({
+                    url: "https://kennedyfab.quickbase.com/db/bi9z9eiy4?a=API_ImportFromCSV",
+                    data: csvData,
+                    type: 'POST',
+                    contentType: "text/xml",
+                    success: function (response) { // If it succeeded
+                        if ($('errcode', response).text() != "0") { // If Error
+							console.log($('errtext', response).text(), $('errdetail', response).text());
+							alert($('errtext', response).text() + " - " + $('errdetail', response).text());
+                        }
+                        else {
+							console.log(response);
+                        }
+                    },
+                    error: function (xhr, status, error) { // If it failed
+                        console.log(xhr, status, error);
+                        alert(errcode, errtext);
+                    }
+                });
+		}
 
 		// Classes:
 		class Part {
@@ -522,6 +604,7 @@
 				this.weight = part.weight;
 				this.parts = [part];
 				this.machine = part.machine;
+				this.assignedPalletNumber = "";
 			}
 
 			// Methods:
