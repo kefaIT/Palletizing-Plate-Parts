@@ -309,6 +309,7 @@
 		var jobNumber = "";
 		var RID = "";
 		var palletizeMode = "";
+		var jobRID = 0;
 
 		let finishedPalletsArray = []; // Array of all pallets for each machine
 
@@ -330,10 +331,10 @@
 			let apiUrlsArray = [];
 
 			if (palletizeMode == "pl" || palletizeMode == "all") { // For Plasma Parts
-				apiUrlsArray.push("https://kennedyfab.quickbase.com/db/bi9z9eiy4?act=API_GenResultsTable&query={'27'.EX.'" + jobNumber + "'}AND({'78'.'EX'.'Plasma'})&clist=3.78.28.51.538&options=num-10000&jsa=1");
+				apiUrlsArray.push("https://kennedyfab.quickbase.com/db/bi9z9eiy4?act=API_GenResultsTable&query={'27'.EX.'" + jobNumber + "'}AND({'78'.'EX'.'Plasma'})&clist=3.78.28.51.538.558&options=num-10000&jsa=1");
 			}
 			if (palletizeMode == "pp" || palletizeMode == "all") { // For PP Parts
-				apiUrlsArray.push("https://kennedyfab.quickbase.com/db/bi9z9eiy4?act=API_GenResultsTable&query={'27'.EX.'" + jobNumber + "'}AND({'78'.'EX'.'PP'})&clist=3.78.28.51.538&options=num-10000&jsa=1"); // [0]RID, [1]Process 1, [2]Assembly 
+				apiUrlsArray.push("https://kennedyfab.quickbase.com/db/bi9z9eiy4?act=API_GenResultsTable&query={'27'.EX.'" + jobNumber + "'}AND({'78'.'EX'.'PP'})&clist=3.78.28.51.538.558&options=num-10000&jsa=1"); // [0]RID, [1]Process 1, [2]Assembly 
 			}
 			if (palletizeMode != "pl" && palletizeMode != "pp" && palletizeMode != "all") { // Wrong or Missing Palletizing Mode
 				alert("Missing or Invalid URL Parameter 'pm': " + palletizeMode);
@@ -387,6 +388,7 @@
 				promiseArray.push(new Promise((resolve, reject) => {
 					$.get(urlsArray[i], function () {
 						if (qdb_data.length > 0) { // Found Transactions
+							jobRID = qdb_data[0][5];
 							resolve(qdb_data); // Call resolve function with transactions array
 						}
 						else { // Didn't find transactions
@@ -512,14 +514,16 @@
 
 		function assignPallets() {
 			// Creates a bin for each pallet and assigns the bin to each part
-
-
 			let promiseArray = [];
 			let url = "";
 
+			$(".assign-pallets-button").addClass("disabled"); // Disable the button
+			$(".assign-pallets-button").removeAttr("onclick"); 			
+			$(".assign-pallets-button").text("Assigning Pallets...");
+
 			for (let i = 0; i < finishedPalletsArray.length; i++) { // For each machine
 				for (let j = 0; j < finishedPalletsArray[i].length; j++) { // For each pallet
-					url = "https://kennedyfab.quickbase.com/db/bjbx7jyz4?a=API_AddRecord&_fid_27=Temporary&_fid_40=test";
+					url = "https://kennedyfab.quickbase.com/db/bjbx7jyz4?a=API_AddRecord&_fid_27=Pre-Assigned%20" + finishedPalletsArray[i][j].machine + "&_fid_40=test&_fid_87=" + jobNumber + "&_fid_88=" + (j + 1);
 
 					promiseArray.push(new Promise((resolve, reject) => {
 						$.ajax({
@@ -546,6 +550,7 @@
 			Promise.all(promiseArray)
 				.then((binRidArray) => {
 					assignPalletNames(binRidArray);
+					markJobPalletized();
 				})
 				.catch((message) => {
 					alert(message); // Display error message
@@ -553,6 +558,17 @@
 		}
 
 
+		function markJobPalletized() {
+			$.get('https://kennedyfab.quickbase.com/db/bgr5nmdwc?a=API_EditRecord&rid=' + jobRID + '&_fid_2003=yes', // Make API Edit Record Call
+				function (xml) { // Error handling:
+					if ($("errcode", xml).text() != "0") { // If there is an error:
+						alert($("errdetail", xml).text()); // Alert User
+					}
+				}
+			);
+		}
+
+		
 		function assignPalletNames(binRidArray) {
 			// Makes API calls to set the "Assigned Pallet Number" transactions field to the formatted name (AP1-69420, where AP1 represents assigned pallet 1 and 69420 represents the bin rid)
 			let csvData = `<qdbapi><records_csv><![CDATA[Record ID#,Assigned Pallet Number\n`;
@@ -560,11 +576,12 @@
 				for (let j = 0; j < finishedPalletsArray[i].length; j++) { // For every pallet
 					for (let k = 0; k < finishedPalletsArray[i][j].parts.length; k++) { // For every part
 						// The confusing part of this is because the binRidArray is a 1D array while finishedPalletsArray is multidimensional
-						csvData += finishedPalletsArray[i][j].parts[k].rid + ",AP" + (j + 1) + "-" + binRidArray[i * finishedPalletsArray[0].length + j] + "\n"; // [Record ID#, Assingned Pallet Number]
+						csvData += finishedPalletsArray[i][j].parts[k].rid + ",AP" + (j + 1) + "-" + binRidArray[i * finishedPalletsArray[0].length + j] + ","; // [Record ID#, Assingned Pallet Number]
+						csvData += binRidArray[i * finishedPalletsArray[0].length + j] + '\n'; // Pre-Assigned BID#
 					}
 				}
 			}
-			csvData += `]]></records_csv><clist>3.172</clist><skipfirst>1</skipfirst></qdbapi>`;
+			csvData += `]]></records_csv><clist>3.172.125</clist><skipfirst>1</skipfirst></qdbapi>`;
 
 			$.ajax({
                     url: "https://kennedyfab.quickbase.com/db/bi9z9eiy4?a=API_ImportFromCSV",
@@ -577,14 +594,16 @@
 							alert($('errtext', response).text() + " - " + $('errdetail', response).text());
                         }
                         else {
-							console.log(response);
+							$(".assign-pallets-button").text("Done!");
+							$(".assign-pallets-button").removeClass("btn-primary");
+							$(".assign-pallets-button").addClass("btn-success");
                         }
                     },
                     error: function (xhr, status, error) { // If it failed
                         console.log(xhr, status, error);
                         alert(errcode, errtext);
                     }
-                });
+			});
 		}
 
 		// Classes:

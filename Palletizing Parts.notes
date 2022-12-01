@@ -49,6 +49,8 @@ Should the spreadsheet be something that is generated through a quickbase report
 Format as [JOB#-PALLET#]
 
 
+Seperate AKS parts by if they have a secondary process.
+
 
 Quickbase report that groups by pallet and shows each part colored based on if the nest is cut.
 
@@ -56,6 +58,6 @@ Parts are yellow when secondary process is not complete and only turn green once
 
 Don't ask for bin on jobs that have been automatically palletized.
 
-Fitup weldout report
+APN Column - Fitup weldout report.
 
 Group the handrails by assembly *******
