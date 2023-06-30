@@ -28,6 +28,10 @@
 			max-height: 100vh;
 		}
 
+		td {
+			max-width: 200px;
+		}
+
 		/* Nav Bar */
 		.nav-bar {
 			/* Flex Container */
@@ -42,7 +46,7 @@
 			align-items: center;
 
 			color: #FFFFFF;
-			background: linear-gradient(0, #2b0b13, 25%, #46121B);
+			background: linear-gradient(0, #2b0b13, 25%, #46121b);
 			box-shadow: 0px 1px 3px 0px #444;
 		}
 
@@ -229,16 +233,58 @@
 			background: #e9e9e9 !important;
 		}
 
-		.machine-header-row {
+		.primary-process--header-row {
 			font-size: larger !important;
 			background: #404040 !important;
 			color: #FFFFFF;
+		}
+
+		.loading-spinner {
+			width: 30px;
+			height: 30px;
+			border: 2px solid #46121b;
+			border-radius: 50%;
+			border-top-color: #0001;
+			display: inline-block;
+			animation: loadingspinner .7s linear infinite;
+		}
+
+		.modal-dialog {
+			width: 20%;
+			height: 10%;
+			position: fixed;
+			top: 45%;
+			left: 40%;
+		}
+
+		@keyframes loadingspinner {
+			0% {
+				transform: rotate(0deg)
+			}
+
+			100% {
+				transform: rotate(360deg)
+			}
 		}
 	</style>
 </head>
 
 <body>
 	<!-- HTML -->
+
+	<!-- Loading Modal -->
+	<div class="modal" id="modal-loading" data-backdrop="static">
+		<div class="modal-dialog modal-sm" id="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-body text-center">
+					<div class="loading-spinner mb-2"></div>
+					<div>Loading</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
 	<!-- Nav Bar -->
 	<nav class="nav-bar">
 		<img class="nav-bar-logo" src="https://kennedyfab.com/wp-content/uploads/2016/06/image002.png">
@@ -311,7 +357,9 @@
 		var palletizeMode = "";
 		var jobRID = 0;
 
-		let finishedPalletsArray = []; // Array of all pallets for each machine
+		var secondaryProcesses = [];
+
+		let finishedPalletsArray = []; // Array of all pallets for each primary process
 
 		const maxPalletWeight = 750; // Maximum weight that can be assigned to any pallet [lbs]
 
@@ -320,6 +368,7 @@
 		function startPalletizationProcess() {
 			// Begin palletization process
 			// Set URL Parameter Variables:
+			$('#modal-loading').modal('show');
 			let urlParams = new URLSearchParams(window.location.search);
 			RID = urlParams.get('rid');
 			jobNumber = urlParams.get('job');
@@ -331,10 +380,10 @@
 			let apiUrlsArray = [];
 
 			if (palletizeMode == "pl" || palletizeMode == "all") { // For Plasma Parts
-				apiUrlsArray.push("https://kennedyfab.quickbase.com/db/bi9z9eiy4?act=API_GenResultsTable&query={'27'.EX.'" + jobNumber + "'}AND({'78'.'EX'.'Plasma'})&clist=3.78.28.51.538.558&options=num-10000&jsa=1");
+				apiUrlsArray.push("https://kennedyfab.quickbase.com/db/bi9z9eiy4?act=API_GenResultsTable&query={'27'.EX.'" + jobNumber + "'}AND({'78'.'EX'.'Plasma'}OR{'79'.EX.'Plasma'})&clist=3.78.720.51.538.558.79.80.28&options=num-10000&jsa=1");
 			}
 			if (palletizeMode == "pp" || palletizeMode == "all") { // For PP Parts
-				apiUrlsArray.push("https://kennedyfab.quickbase.com/db/bi9z9eiy4?act=API_GenResultsTable&query={'27'.EX.'" + jobNumber + "'}AND({'78'.'EX'.'PP'})&clist=3.78.28.51.538.558&options=num-10000&jsa=1"); // [0]RID, [1]Process 1, [2]Assembly 
+				apiUrlsArray.push("https://kennedyfab.quickbase.com/db/bi9z9eiy4?act=API_GenResultsTable&query={'27'.EX.'" + jobNumber + "'}AND({'78'.'EX'.'PP'}OR{'79'.EX.'PP'})&clist=3.78.720.51.538.558.79.80.28&options=num-10000&jsa=1"); // [0]RID, [1]Process 1, [2]Kitting Number, [3]Material, [4]Weight, [5]Job Record ID#, [6]Process 2, [7]Process 3, [8]Assy #
 			}
 			if (palletizeMode != "pl" && palletizeMode != "pp" && palletizeMode != "all") { // Wrong or Missing Palletizing Mode
 				alert("Missing or Invalid URL Parameter 'pm': " + palletizeMode);
@@ -371,8 +420,8 @@
 				case "all":
 					pageTitle = "Palletize All Plate Parts";
 					tabs = `
-						<div class="tab selected" id="plasma-tab" onclick="$('.Plasma-row.pallet-header-row, .Plasma-row.machine-header-row').show(); $('.PP-row').hide(); $('#plasma-tab').addClass('selected'); $('#pp-tab').removeClass('selected');">Plasma</div>
-						<div class="tab" id="pp-tab" onclick="$('.PP-row.pallet-header-row, .PP-row.machine-header-row').show(); $('.Plasma-row').hide(); $('#pp-tab').addClass('selected'); $('#plasma-tab').removeClass('selected');">PP</div>
+						<div class="tab selected" id="plasma-tab" onclick="$('.Plasma-row.pallet-header-row, .Plasma-row.primary-process--header-row').show(); $('.PP-row').hide(); $('#plasma-tab').addClass('selected'); $('#pp-tab').removeClass('selected');">Plasma</div>
+						<div class="tab" id="pp-tab" onclick="$('.PP-row.pallet-header-row, .PP-row.primary-process--header-row').show(); $('.Plasma-row').hide(); $('#pp-tab').addClass('selected'); $('#plasma-tab').removeClass('selected');">PP</div>
 					`;
 					break;
 			}
@@ -403,8 +452,9 @@
 					createPartsArray(transactionsArray); // Create an array of part objects based on the gathered part info
 				})
 				.catch((message) => {
+					console.log(message);
 					alert(message); // Display error message
-					window.history.back(-1); // Go back to previous page
+					// window.history.back(-1); // Go back to previous page
 				});
 
 		}
@@ -413,12 +463,12 @@
 		function createPartsArray(transactionsArray) {
 			// This function creates the parts array and then calls the palletizeParts function
 			let partsArray = [];
-			for (let i = 0; i < transactionsArray.length; i++) { // For each machine
+			for (let i = 0; i < transactionsArray.length; i++) { // For each primary process
 				partsArray = []; // Clear the parts array
 				for (let j = 0; j < transactionsArray[i].length; j++) { // For each part
 					partsArray.push(new Part(transactionsArray[i][j])); // Create part object and append it to the parts array
 				}
-				$('#' + partsArray[0].machine + '-parts-qty').text(partsArray.length);
+				$('#' + partsArray[0].primaryProcess + '-parts-qty').text(partsArray.length);
 				palletizeParts(partsArray); // Call palletizeParts function with parts array
 			}
 		}
@@ -430,13 +480,26 @@
 			let palletsArray = [new Pallet(partsArray[0])]; // Create the first pallet using the first part and add it to the array
 			for (let i = 1; i < partsArray.length; i++) { // For every part
 				for (let j = 0; j <= palletsArray.length; j++) { // For every pallet
-					if (j == palletsArray.length) { // If there are no more pallets to check
-						palletsArray.push(new Pallet(partsArray[i])); // Create a new pallet for this assembly
-						break;
+					if (palletsArray[0].kittingNumber != "") { // If the parts have kitting numbers
+						if (j == palletsArray.length) { // If there are no more pallets to check
+							palletsArray.push(new Pallet(partsArray[i])); // Create a new pallet for this kitting number
+							break;
+						}
+						else if (palletsArray[j].kittingNumber == partsArray[i].kittingNumber) { // if the current pallet is the same kitting number as the part
+							if (palletsArray[j].addPart(partsArray[i])) { // Try to put the part on the pallet
+								break; // Break for loop if the part fits, otherwise, try to add it to the next pallet
+							}
+						}
 					}
-					else if (palletsArray[j].assembly == partsArray[i].assembly) { // if the current pallet is the same assembly as the part
-						if (palletsArray[j].addPart(partsArray[i])) { // Try to put the part on the pallet
-							break; // Break for loop if the part fits, otherwise, try to add it to the next pallet
+					else { // Otherwise
+						if (j == palletsArray.length) { // If there are no more pallets to check
+							palletsArray.push(new Pallet(partsArray[i])); // Create a new pallet for this assembly number
+							break;
+						}
+						else if (palletsArray[j].assembly == partsArray[i].assembly) { // if the current pallet is the same assembly number as the part
+							if (palletsArray[j].addPart(partsArray[i])) { // Try to put the part on the pallet
+								break; // Break for loop if the part fits, otherwise, try to add it to the next pallet
+							}
 						}
 					}
 				}
@@ -447,31 +510,86 @@
 
 		function combineSmallestPallets(palletsArray) {
 			// This function combines all of the smallest pallets with the larger ones
-			palletsArray.sort(function (a, b) { return b.weight - a.weight }); // Sort the pallets array from greatest to least weight
+			let currentPallets = [];
+			let finalPalletsArray = [];
 
-			let i = palletsArray.length - 1; // Index of the lightest pallet
-			let j = 0; // Index of the heaviest pallet
+			if (palletsArray[0].kittingNumber != "") { // If there a kitting number, use kitting numbers for grouping
+				palletsArray.sort(function (a, b) { return a.kittingNumber - b.kittingNumber }) // Sort the pallets array from greatest to least kitting number
+				secondaryProcesses.sort(); // Sort secondary processes
 
-			while (true) { // Loop
-				if (i == j) { // If both pointers are pointing to the same pallet
-					break;
-				}
-				if (palletsArray[j].mergePallet(palletsArray[i])) { // Try to merge the pallets
-					palletsArray.pop(); // On success, pop the small pallet
-					i--; // Decrement the small pallet pointer
-				}
-				else { // If failed to merge pallets
-					j++; // Increment large pallet pointer
+				for (let secondaryProcessIndex = 0; secondaryProcessIndex < secondaryProcesses.length; secondaryProcessIndex++) { // For every secondary process
+					// Create an array of pallets with that process:
+					currentPallets = [];
+					for (let palletIndex = 0; palletIndex < palletsArray.length; palletIndex++) { // For every pallet	
+						if (palletsArray[palletIndex].secondaryProcess == secondaryProcesses[secondaryProcessIndex]) { // If the secondary processes matches
+							currentPallets.push(palletsArray[palletIndex]);
+						}
+					}
+
+					if (currentPallets.length > 0) { // If the currentPallet array is not blank
+						for (let i = 0; i < currentPallets.length - 1; i++) {  // For every pallet in the array
+							while (true) { // Loop
+								if (i + 1 >= currentPallets.length) { // If we've merged all of the pallets
+									break;
+								}
+								if (currentPallets[i].mergePallet(currentPallets[i + 1])) { // Try to merge the pallets
+									currentPallets.splice(i + 1, 1); // If successful, remove the secondary pallet
+								}
+								else { // If we couldn't merge the pallets
+									break; // Break the loop
+								}
+							}
+						}
+						currentPallets.forEach(p => { // For each pallet
+							finalPalletsArray.push(p); // Add it to the final array
+						});
+					}
 				}
 			}
-			$('#' + palletsArray[0].machine + '-pallets-qty').text(palletsArray.length);
-			displayPalletizedTable(palletsArray); // Call displayPalletizedTable function with pallets array
+			else { // Otherwise, use assembly numbers for grouping
+				palletsArray.sort(function (a, b) { return b.weight - a.weight }) // Sort the pallets array from greatest to least weight number
+				secondaryProcesses.sort(); // Sort secondary processes
+
+				for (let secondaryProcessIndex = 0; secondaryProcessIndex < secondaryProcesses.length; secondaryProcessIndex++) { // For every secondary process
+					// Create an array of pallets with that process:
+					currentPallets = [];
+					for (let palletIndex = 0; palletIndex < palletsArray.length; palletIndex++) { // For every pallet	
+						if (palletsArray[palletIndex].secondaryProcess == secondaryProcesses[secondaryProcessIndex]) { // If the secondary processes matches
+							currentPallets.push(palletsArray[palletIndex]);
+						}
+					}
+
+
+					if (currentPallets.length > 0) { // If the currentPallet array is not blank
+						let i = currentPallets.length - 1 // Index of the small pallet
+						let j = 0 // index of the big pallet
+						while (true) { // Loop
+							if (i == j) { // If both pointers are pointing to the same pallet
+								break;
+							}
+							if (currentPallets[j].mergePallet(currentPallets[i])) { // Try to merge the pallets
+								currentPallets.pop(); // On success, pop the small pallet
+								i--; // Decrement the small pallet pointer
+							}
+							else { // If failed to merge pallets
+								j++; // Increment large pallet pointer
+							}
+						}
+						currentPallets.forEach(p => { // For each pallet
+							finalPalletsArray.push(p); // Add it to the final array
+						});
+					}
+				}
+			}
+
+			$('#' + finalPalletsArray[0].primaryProcess + '-pallets-qty').text(palletsArray.length);
+			displayPalletizedTable(finalPalletsArray); // Call displayPalletizedTable function with pallets array
 		}
 
 
 		function displayPalletizedTable(palletsArray) {
 			// Populates table with paelltized parts info
-			machine = palletsArray[0].machine
+			primaryProcess = palletsArray[0].primaryProcess
 			let tableContents = ``;
 
 			finishedPalletsArray.push(palletsArray); // Add finished pallets array to global variable
@@ -479,9 +597,16 @@
 			for (let i = 0; i < palletsArray.length; i++) { // For every pallet
 				// Add the pallet header row:
 				tableContents += `
-					<tr class="pallet-header-row ${machine}-row" onclick="toggleHideParts('p${i}-${machine}')">
+					<tr class="pallet-header-row ${primaryProcess}-row" onclick="toggleHideParts('p${i}-${primaryProcess}')">
 						<td>Pallet ${i + 1}</td>
-						<td>Assembly: ${palletsArray[i].assembly}</td>
+						<td>${palletsArray[i].secondaryProcess}</td>`;
+					if (palletsArray[i].kittingNumber != "") {
+						tableContents += `<td>KN: ${palletsArray[i].kittingNumber}</td>`;
+					}
+					else {
+						tableContents += `<td>AN: ${palletsArray[i].assembly}</td>`;
+					}
+					tableContents += `
 						<td>${palletsArray[i].parts.length} pcs</td>
 						<td>${palletsArray[i].weight.toFixed(2)} lbs</td>
 					</tr>
@@ -489,9 +614,16 @@
 				for (let j = 0; j < palletsArray[i].parts.length; j++) { // For ever part in the current pallet
 					// Add the part row
 					tableContents += `
-						<tr class="part-row ${machine}-row" name="p${i}-${machine}" hidden>
+						<tr class="part-row ${primaryProcess}-row" name="p${i}-${primaryProcess}" hidden>
 							<td>RID: ${palletsArray[i].parts[j].rid}</td>
-							<td>Assembly: ${palletsArray[i].parts[j].assembly}</td>
+							<td>Process: ${palletsArray[i].parts[j].secondaryProcess}</td>`;
+						if (palletsArray[i].kittingNumber != "") {
+							tableContents += `<td>KN: ${palletsArray[i].parts[j].kittingNumber}</td>`;
+						}
+						else {
+							tableContents += `<td>KN: ${palletsArray[i].parts[j].assembly}</td>`;
+						}
+						tableContents += `
 							<td>Material: ${palletsArray[i].parts[j].material}</td>
 							<td>${palletsArray[i].parts[j].weight.toFixed(2)} lbs</td>
 						</tr>
@@ -504,6 +636,7 @@
 			if (palletizeMode == "all") {
 				$(".PP-row").hide();
 			}
+			$('#modal-loading').modal('hide');
 		}
 
 		function toggleHideParts(palletIndex) {
@@ -518,12 +651,12 @@
 			let url = "";
 
 			$(".assign-pallets-button").addClass("disabled"); // Disable the button
-			$(".assign-pallets-button").removeAttr("onclick"); 			
+			$(".assign-pallets-button").removeAttr("onclick");
 			$(".assign-pallets-button").text("Assigning Pallets...");
 
-			for (let i = 0; i < finishedPalletsArray.length; i++) { // For each machine
+			for (let i = 0; i < finishedPalletsArray.length; i++) { // For each primary process
 				for (let j = 0; j < finishedPalletsArray[i].length; j++) { // For each pallet
-					url = "https://kennedyfab.quickbase.com/db/bjbx7jyz4?a=API_AddRecord&_fid_27=Pre-Assigned%20" + finishedPalletsArray[i][j].machine + "&_fid_40=test&_fid_87=" + jobNumber + "&_fid_88=" + (j + 1);
+					url = "https://kennedyfab.quickbase.com/db/bjbx7jyz4?a=API_AddRecord&_fid_27=Pre-Assigned%20" + finishedPalletsArray[i][j].primaryProcess + "&_fid_40=test&_fid_87=" + jobNumber + "&_fid_88=" + (j + 1);
 
 					promiseArray.push(new Promise((resolve, reject) => {
 						$.ajax({
@@ -553,6 +686,7 @@
 					markJobPalletized();
 				})
 				.catch((message) => {
+					console.log("ERROR IN 587");
 					alert(message); // Display error message
 				});
 		}
@@ -568,11 +702,11 @@
 			);
 		}
 
-		
+
 		function assignPalletNames(binRidArray) {
 			// Makes API calls to set the "Assigned Pallet Number" transactions field to the formatted name (AP1-69420, where AP1 represents assigned pallet 1 and 69420 represents the bin rid)
 			let csvData = `<qdbapi><records_csv><![CDATA[Record ID#,Assigned Pallet Number\n`;
-			for (let i = 0; i < finishedPalletsArray.length; i++) { // For every machine
+			for (let i = 0; i < finishedPalletsArray.length; i++) { // For every primary process
 				for (let j = 0; j < finishedPalletsArray[i].length; j++) { // For every pallet
 					for (let k = 0; k < finishedPalletsArray[i][j].parts.length; k++) { // For every part
 						// The confusing part of this is because the binRidArray is a 1D array while finishedPalletsArray is multidimensional
@@ -584,25 +718,25 @@
 			csvData += `]]></records_csv><clist>3.172.125</clist><skipfirst>1</skipfirst></qdbapi>`;
 
 			$.ajax({
-                    url: "https://kennedyfab.quickbase.com/db/bi9z9eiy4?a=API_ImportFromCSV",
-                    data: csvData,
-                    type: 'POST',
-                    contentType: "text/xml",
-                    success: function (response) { // If it succeeded
-                        if ($('errcode', response).text() != "0") { // If Error
-							console.log($('errtext', response).text(), $('errdetail', response).text());
-							alert($('errtext', response).text() + " - " + $('errdetail', response).text());
-                        }
-                        else {
-							$(".assign-pallets-button").text("Done!");
-							$(".assign-pallets-button").removeClass("btn-primary");
-							$(".assign-pallets-button").addClass("btn-success");
-                        }
-                    },
-                    error: function (xhr, status, error) { // If it failed
-                        console.log(xhr, status, error);
-                        alert(errcode, errtext);
-                    }
+				url: "https://kennedyfab.quickbase.com/db/bi9z9eiy4?a=API_ImportFromCSV",
+				data: csvData,
+				type: 'POST',
+				contentType: "text/xml",
+				success: function (response) { // If it succeeded
+					if ($('errcode', response).text() != "0") { // If Error
+						console.log($('errtext', response).text(), $('errdetail', response).text());
+						alert($('errtext', response).text() + " - " + $('errdetail', response).text());
+					}
+					else {
+						$(".assign-pallets-button").text("Done!");
+						$(".assign-pallets-button").removeClass("btn-primary");
+						$(".assign-pallets-button").addClass("btn-success");
+					}
+				},
+				error: function (xhr, status, error) { // If it failed
+					console.log(xhr, status, error);
+					alert(errcode, errtext);
+				}
 			});
 		}
 
@@ -611,24 +745,41 @@
 			constructor(transactionInfo) {
 				this.rid = transactionInfo[0];
 				this.weight = Number(transactionInfo[4]);
-				this.assembly = transactionInfo[2];
+				this.assembly = transactionInfo[8];
+				this.kittingNumber = String(transactionInfo[2]);
 				this.material = transactionInfo[3];
-				this.machine = transactionInfo[1];
+				this.primaryProcess = "";
+				this.secondaryProcess = "";
+
+				if (transactionInfo[1] == "Plasma" || transactionInfo[1] == "PP") { // If the primary process is in Process 1
+					this.primaryProcess = transactionInfo[1]; // Set the primary process
+					this.secondaryProcess = transactionInfo[6]; // Set the secondary process
+				}
+				else { // Otherwise
+					this.primaryProcess = transactionInfo[6]; // Set the processes accordingly
+					this.secondaryProcess = transactionInfo[7];
+				}
 			}
 		}
 
 		class Pallet {
 			constructor(part) {
 				this.assembly = part.assembly;
+				this.kittingNumber = part.kittingNumber
 				this.weight = part.weight;
 				this.parts = [part];
-				this.machine = part.machine;
+				this.primaryProcess = part.primaryProcess;
+				this.secondaryProcess = part.secondaryProcess;
 				this.assignedPalletNumber = "";
+
+				if (!secondaryProcesses.includes(this.secondaryProcess)) { // If the secondary processes list doesn't have this process
+					secondaryProcesses.push(this.secondaryProcess); // Add it
+				}
 			}
 
 			// Methods:
 			addPart(part) {
-				if (this.weight + part.weight > maxPalletWeight) { // If the part won't fit
+				if (this.weight + part.weight > maxPalletWeight || this.secondaryProcess != part.secondaryProcess) { // If the part won't fit or has a different secondary process
 					return false;
 				}
 				else {
@@ -639,13 +790,17 @@
 			}
 
 			mergePallet(pallet) {
-				if (this.weight + pallet.weight > maxPalletWeight) { // If the pallet is to heavy to merge
+				if (this.weight + pallet.weight > maxPalletWeight || this.secondaryProcess != pallet.secondaryProcess) { // If the pallet is to heavy to merge or they have different secondary processes
 					return false;
 				}
 				else {
 					for (let i = 0; i < pallet.parts.length; i++) {
 						this.addPart(pallet.parts[i]);
 					}
+					if (pallet.kittingNumber != "") {
+						this.kittingNumber = this.kittingNumber + ", " + pallet.kittingNumber;
+					}
+					this.assembly = this.assembly + ", " + pallet.assembly;
 					return true;
 				}
 			}
